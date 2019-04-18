@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -42,7 +43,7 @@ func watch(interval time.Duration) (<-chan string, context.CancelFunc) {
 }
 
 func main() {
-    fmt.Println("running...")
+	fmt.Println("running...")
 
 	ch, _ := watch(200 * time.Millisecond)
 	rep := strings.NewReplacer("\n", " ")
