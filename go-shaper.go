@@ -46,7 +46,7 @@ func main() {
   fmt.Println("running...")
 
   ch, _ := watch(200 * time.Millisecond)
-  rep := strings.NewReplacer("-\n", "", "\n", " ")
+  rep := strings.NewReplacer("-\n", "", "- ", "", "\n", " ")
 
   for text := range ch {
     renew := rep.Replace(text)
