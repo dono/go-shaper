@@ -1,57 +1,61 @@
 package main
 
 import (
-  "context"
-  "fmt"
-  "log"
-  "strings"
-  "time"
+	"context"
+	"log"
+	"runtime"
+	"strings"
+	"time"
 
-  "github.com/atotto/clipboard"
+	"github.com/atotto/clipboard"
 )
 
-func watch(interval time.Duration) (<-chan string, context.CancelFunc) {
-  var (
-    ch          = make(chan string)
-    lastContent string
-    ctx, cancel = context.WithCancel(context.Background())
-  )
+func main() {
+	log.Println("running...")
 
-  go func() {
-    defer close(ch)
+	ch, _ := watch(200 * time.Millisecond)
 
-    for {
-      time.Sleep(interval)
+	replacer := strings.NewReplacer("-\n", "", "- ", "", "\n", " ")
+	if runtime.GOOS == "windows" {
+		replacer = strings.NewReplacer("-\r\n", "", "- ", "", "\r\n", " ")
+	}
 
-      select {
-      case <-ctx.Done():
-        return
-      default:
-      }
-
-      content, err := clipboard.ReadAll()
-      if err != nil || content == "" || content == lastContent {
-        continue
-      }
-
-      lastContent = content
-      ch <- content
-    }
-  }()
-
-  return ch, cancel
+	for text := range ch {
+		renew := replacer.Replace(text)
+		if err := clipboard.WriteAll(renew); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
-func main() {
-  fmt.Println("running...")
+func watch(interval time.Duration) (<-chan string, context.CancelFunc) {
+	var (
+		ch          = make(chan string)
+		lastContent string
+		ctx, cancel = context.WithCancel(context.Background())
+	)
 
-  ch, _ := watch(200 * time.Millisecond)
-  rep := strings.NewReplacer("-\n", "", "- ", "", "\n", " ")
+	go func() {
+		defer close(ch)
 
-  for text := range ch {
-    renew := rep.Replace(text)
-    if err := clipboard.WriteAll(renew); err != nil {
-      log.Fatal(err)
-    }
-  }
+		for {
+			time.Sleep(interval)
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			content, err := clipboard.ReadAll()
+			if err != nil || content == "" || content == lastContent {
+				continue
+			}
+
+			lastContent = content
+			ch <- content
+		}
+	}()
+
+	return ch, cancel
 }
